@@ -1,7 +1,7 @@
 # Fleks
 
 [![MIT license](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/Quillraven/Fleks/blob/master/LICENSE)
-[![Maven](https://img.shields.io/badge/Maven-1.0--KMP--RC1-success.svg)](https://search.maven.org/artifact/io.github.quillraven.fleks/Fleks/1.0-KMP-RC1/jar)
+[![Maven](https://img.shields.io/badge/Maven-2.0--RC1-success.svg)](https://search.maven.org/artifact/io.github.quillraven.fleks/Fleks/2.0-RC1/jar)
 
 [![Build KMP](https://img.shields.io/github/workflow/status/quillraven/fleks/Build/kmp?event=push&label=Build%20kmp)](https://github.com/Quillraven/fleks/actions)
 [![Kotlin](https://img.shields.io/badge/Kotlin-1.6.20-red.svg)](http://kotlinlang.org/)
@@ -47,10 +47,9 @@ then use [Artemis-odb](https://github.com/junkdog/artemis-odb) or [Ashley](https
 
 ## Current Status
 
-This branch contains a special Kotlin Multiplatform compatible version of Fleks. It has a slightly different API when compared with the master branch version.
-But still similar enough that it should not be much work to switch between the two versions.
+Fleks went multiplatform! This also means an updated API when you upgrade from a previous version like 1.0-RC3.
 
-Release version 1.0-KMP-RC1 is available on maven central since XX-YYY-2022. Please feel free to contribute to the
+Release version 2.0-RC1 is available on maven central since XX-YYY-2022. Please feel free to contribute to the
 Discussions or Issues. Help is always appreciated. 
 To use Fleks add it as a dependency to your project:
 
@@ -60,20 +59,30 @@ To use Fleks add it as a dependency to your project:
 <dependency>
   <groupId>io.github.quillraven.fleks</groupId>
   <artifactId>Fleks</artifactId>
-  <version>1.0-KMP-RC1</version>
+  <version>2.0-RC1</version>
 </dependency>
 ```
 
 #### Gradle (Groovy)
 
 ```kotlin
-implementation 'io.github.quillraven.fleks:Fleks:1.0-KMP-RC1'
+implementation 'io.github.quillraven.fleks:Fleks:2.0-RC1'
 ```
 
 #### Gradle (Kotlin)
 
 ```kotlin
-implementation("io.github.quillraven.fleks:Fleks:1.0-KMP-RC1")
+implementation("io.github.quillraven.fleks:Fleks:2.0-RC1")
+```
+
+#### KorGE project
+
+```kotlin
+korge {
+    // ...
+    dependencyMulti("io.github.quillraven.fleks:Fleks:2.0-RC1", registerPlugin = false)
+    // ...
+}
 ```
 
 ## Current API and usage
