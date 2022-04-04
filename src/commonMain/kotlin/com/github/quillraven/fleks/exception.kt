@@ -7,7 +7,7 @@ abstract class FleksException(message: String) : RuntimeException(message)
 class FleksSystemAlreadyAddedException(system: KClass<*>) :
     FleksException("System '${system.simpleName}' is already part of the '${WorldConfiguration::class.simpleName}'.")
 
-class FleksComponentAlreadyAddedException(comp: String) :
+class FleksComponentAlreadyAddedException(comp: KClass<*>) :
     FleksException("Component '$comp' is already part of the '${WorldConfiguration::class.simpleName}'.")
 
 class FleksSystemCreationException(system: IteratingSystem) :
@@ -20,8 +20,10 @@ class FleksNoSuchComponentException(component: String) :
     FleksException("There is no component of type '$component' in the ComponentMapper. Did you add the component to the '${WorldConfiguration::class.simpleName}'?")
 
 class FleksInjectableAlreadyAddedException(type: String) :
-    FleksException("Injectable with type name '$type' is already part of the '${WorldConfiguration::class.simpleName}'. Please add a unique 'type' string as parameter " +
-        "to inject() function in world configuration and to Inject.dependency() in your systems or component listeners.")
+    FleksException(
+        "Injectable with type name '$type' is already part of the '${WorldConfiguration::class.simpleName}'. Please add a unique 'type' string as parameter " +
+            "to inject() function in world configuration and to Inject.dependency() in your systems or component listeners."
+    )
 
 class FleksInjectableTypeHasNoName(type: KClass<*>) :
     FleksException("Injectable '$type' does not have simpleName in its class type.")

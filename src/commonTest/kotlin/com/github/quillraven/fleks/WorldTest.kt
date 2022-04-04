@@ -66,8 +66,11 @@ internal class WorldTest {
     @Test
     fun createEmptyWorldWith1InjectableArgsIteratingSystem() {
         val w = World {
+            components {
+                add(::WorldTestComponent)
+            }
+
             system(::WorldTestIteratingSystem)
-            component(::WorldTestComponent)
 
             inject("42")
         }
@@ -81,8 +84,11 @@ internal class WorldTest {
         val expectedName = "myName"
         val expectedLevel = "myLevel"
         val w = World {
+            components {
+                add(::WorldTestComponent)
+            }
+
             system(::WorldTestNamedDependencySystem)
-            component(::WorldTestComponent)
 
             inject("name", expectedName)
             inject("level", "myLevel")
@@ -130,8 +136,11 @@ internal class WorldTest {
     @Test
     fun createNewEntity() {
         val w = World {
+            components {
+                add(::WorldTestComponent)
+            }
+
             system(::WorldTestIteratingSystem)
-            component(::WorldTestComponent)
             inject("42")
         }
 
@@ -157,9 +166,12 @@ internal class WorldTest {
     @Test
     fun updateWorldWithDeltaTimeOf1() {
         val w = World {
+            components {
+                add(::WorldTestComponent)
+            }
+
             system(::WorldTestIntervalSystem)
             system(::WorldTestIteratingSystem)
-            component(::WorldTestComponent)
 
             inject("42")
         }
@@ -200,7 +212,9 @@ internal class WorldTest {
     @Test
     fun createWorldWithComponentListener() {
         val w = World {
-            component(::WorldTestComponent, ::WorldTestComponentListener)
+            components {
+                add(::WorldTestComponent, ::WorldTestComponentListener)
+            }
         }
 
         assertEquals(1, w.componentService.mapper<WorldTestComponent>().listeners.size)
@@ -210,8 +224,10 @@ internal class WorldTest {
     fun cannotAddSameComponentTwice() {
         assertFailsWith<FleksComponentAlreadyAddedException> {
             World {
-                component(::WorldTestComponent)
-                component(::WorldTestComponent)
+                components {
+                    add(::WorldTestComponent)
+                    add(::WorldTestComponent)
+                }
             }
         }
     }
@@ -219,7 +235,9 @@ internal class WorldTest {
     @Test
     fun getMapper() {
         val w = World {
-            component(::WorldTestComponent)
+            components {
+                add(::WorldTestComponent)
+            }
         }
 
         val mapper = w.mapper<WorldTestComponent>()

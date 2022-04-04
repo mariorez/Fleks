@@ -296,15 +296,9 @@ class SystemService(
         compService: ComponentService,
         allFamilies: MutableList<Family>
     ): Family {
-        val allOfComps = system.allOfComponents?.map {
-            val type = it.simpleName ?: throw FleksInjectableTypeHasNoName(it)
-            compService.mapper(type) }
-        val noneOfComps = system.noneOfComponents?.map {
-            val type = it.simpleName ?: throw FleksInjectableTypeHasNoName(it)
-            compService.mapper(type) }
-        val anyOfComps = system.anyOfComponents?.map {
-            val type = it.simpleName ?: throw FleksInjectableTypeHasNoName(it)
-            compService.mapper(type) }
+        val allOfComps = system.allOfComponents?.map { compService.mapper(it) }
+        val noneOfComps = system.noneOfComponents?.map { compService.mapper(it) }
+        val anyOfComps = system.anyOfComponents?.map { compService.mapper(it) }
 
         if ((allOfComps == null || allOfComps.isEmpty())
             && (noneOfComps == null || noneOfComps.isEmpty())
@@ -373,8 +367,9 @@ class SystemService(
 object Inject {
     @PublishedApi
     internal lateinit var injectObjects: Map<String, Injectable>
+
     @PublishedApi
-    internal lateinit var mapperObjects: Map<String, ComponentMapper<*>>
+    internal lateinit var mapperObjects: Map<KClass<*>, ComponentMapper<*>>
 
     inline fun <reified T : Any> dependency(): T {
         val injectType = T::class.simpleName ?: throw FleksInjectableTypeHasNoName(T::class)
@@ -393,9 +388,9 @@ object Inject {
 
     @Suppress("UNCHECKED_CAST")
     inline fun <reified T : Any> componentMapper(): ComponentMapper<T> {
-        val injectType = T::class.simpleName ?: throw FleksInjectableTypeHasNoName(T::class)
+        val injectType = T::class
         return if (injectType in mapperObjects) {
             mapperObjects[injectType]!! as ComponentMapper<T>
-        } else throw FleksSystemComponentInjectException(injectType)
+        } else throw FleksSystemComponentInjectException(injectType.simpleName!!)
     }
 }

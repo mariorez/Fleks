@@ -1,5 +1,6 @@
 package com.github.quillraven.fleks
 
+import kotlin.reflect.KClass
 import kotlin.test.*
 
 internal class ComponentTest {
@@ -28,20 +29,8 @@ internal class ComponentTest {
         }
     }
 
-    private val componentFactory = mutableMapOf<String, () -> Any>()
-
-    private inline fun <reified T : Any> initComponentFactory(noinline compFactory: () -> T) {
-        val compType = T::class.simpleName ?: throw FleksInjectableTypeHasNoName(T::class)
-
-        if (compType in componentFactory) {
-            throw FleksComponentAlreadyAddedException(compType)
-        }
-        componentFactory[compType] = compFactory
-    }
-
-    init {
-        initComponentFactory(::ComponentTestComponent)
-    }
+    private val componentFactory =
+        mapOf<KClass<*>, () -> Any>(ComponentTestComponent::class to { ComponentTestComponent() })
 
     @Test
     fun addEntityToMapperWithSufficientCapacity() {

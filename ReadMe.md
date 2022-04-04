@@ -487,7 +487,7 @@ Artemis-odb and Ashley in three scenarios which you can find in the **benchmarks
 I used [kotlinx-benchmark](https://github.com/Kotlin/kotlinx-benchmark) to create the benchmarks with a measurement
 that represents the number of executed operations within three seconds.
 
-All Benchmarks are run within IntelliJ using the `benchmarksBenchmark` gradle task on my local computer. The hardware
+All Benchmarks are run within IntelliJ using the `jvmBenchmarksBenchmark` gradle task on my local computer. The hardware
 is:
 
 - Windows 10 64-bit
@@ -495,27 +495,27 @@ is:
 - Intel i7-5820K @ 3.30Ghz
 - Java 8 target
 
-Here is the result (the higher the Score the better):
+Here is an example result (the higher the Score the better):
 
 | Library | Benchmark | Mode | Cnt | Score   | Error      | Units |
 | ------- | --------- | ---- | --- |---------|------------| ----- |
 | |
-| Ashley | AddRemove | thrpt | 3 | 207,007 | ± 39,121   | ops/s |
-| Artemis | AddRemove | thrpt | 3 | 677,231 | ± 2002,449 | ops/s |
-| Fleks | AddRemove | thrpt | 3 | 810,189 | ± 289,080  | ops/s |
+| Ashley | AddRemove | thrpt | 3 | 199,041 | ± 69,020   | ops/s |
+| Artemis | AddRemove | thrpt | 3 | 615,925 | ± 1844,625 | ops/s |
+| Fleks | AddRemove | thrpt | 3 | 808,055 | ± 105,773  | ops/s |
 | |
-| Ashley | Simple | thrpt | 3 | 3,986   | ± 1,390    | ops/s |
-| Artemis | Simple | thrpt | 3 | 32,830  | ± 2,965    | ops/s |
-| Fleks | Simple | thrpt | 3 | 32,098  | ± 7,348    | ops/s |
+| Ashley | Simple | thrpt | 3 | 3,919   | ± 6,315    | ops/s |
+| Artemis | Simple | thrpt | 3 | 32,845  | ± 6,038    | ops/s |
+| Fleks | Simple | thrpt | 3 | 32,921  | ± 4,292    | ops/s |
 | |
-| Ashley | Complex | thrpt | 3 | 0,056   | ± 0,117    | ops/s |
-| Artemis | Complex | thrpt | 3 | 1,452   | ± 0,452    | ops/s |
-| Fleks | Complex | thrpt | 3 | 1,326   | ± 0,269    | ops/s |
+| Ashley | Complex | thrpt | 3 | 0,060   | ± 0,021    | ops/s |
+| Artemis | Complex | thrpt | 3 | 1,441   | ± 0,129    | ops/s |
+| Fleks | Complex | thrpt | 3 | 1,156   | ± 0,201    | ops/s |
 
-I am not an expert for performance measurement, that's why you should take those numbers with a grain of salt but as you
-can see in the table:
+I am not an expert for performance measurement, that's why you should take those numbers with a grain of salt
+but from my benchmarks I get:
 
 - Ashley is the slowest of the three libraries by far
-- Fleks is ~1.2x the speed of Artemis in the **AddRemove** benchmark
+- Fleks is ~1.2 - ~1.3x the speed of Artemis in the **AddRemove** benchmark
 - Fleks is ~the same speed as Artemis in the **Simple** benchmark
-- Fleks is ~0.9x the speed of Artemis in the **Complex** benchmark
+- Fleks is ~0.8 - ~0.9x the speed of Artemis in the **Complex** benchmark

@@ -12,7 +12,7 @@ data class FleksSprite(var path: String = "", var animationTime: Float = 0f)
 
 class FleksSystemSimple : IteratingSystem(
     allOfComponents = arrayOf(FleksPosition::class)
-    ) {
+) {
 
     private val positions: ComponentMapper<FleksPosition> = Inject.componentMapper()
 
@@ -69,7 +69,9 @@ open class FleksStateAddRemove {
         world = World {
             entityCapacity = NUM_ENTITIES
 
-            component(::FleksPosition)
+            components {
+                add(::FleksPosition)
+            }
         }
     }
 }
@@ -82,9 +84,12 @@ open class FleksStateSimple {
     fun setup() {
         world = World {
             entityCapacity = NUM_ENTITIES
-            system(::FleksSystemSimple)
 
-            component(::FleksPosition)
+            components {
+                add(::FleksPosition)
+            }
+
+            system(::FleksSystemSimple)
         }
 
         repeat(NUM_ENTITIES) {
@@ -101,12 +106,15 @@ open class FleksStateComplex {
     fun setup() {
         world = World {
             entityCapacity = NUM_ENTITIES
+
+            components {
+                add(::FleksPosition)
+                add(::FleksLife)
+                add(::FleksSprite)
+            }
+
             system(::FleksSystemComplex1)
             system(::FleksSystemComplex2)
-
-            component(::FleksPosition)
-            component(::FleksLife)
-            component(::FleksSprite)
         }
 
         repeat(NUM_ENTITIES) {
