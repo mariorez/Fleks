@@ -113,6 +113,7 @@ class ComponentMapper<T>(
      * to add listeners through the [WorldConfiguration].
      */
     @Suppress("UNCHECKED_CAST")
+    @PublishedApi
     internal fun addComponentListenerInternal(listener: ComponentListener<*>) =
         addComponentListener(listener as ComponentListener<T>)
 
@@ -136,30 +137,18 @@ class ComponentMapper<T>(
  * It creates a [ComponentMapper] for every unique component type and assigns a unique id for each mapper.
  */
 class ComponentService(
-    componentFactory: Map<KClass<*>, () -> Any>
-) {
     /**
      * Returns map of [ComponentMapper] that stores mappers by its component type.
      * It is used by the [SystemService] during system creation and by the [EntityService] for entity creation.
      */
     @PublishedApi
-    internal val mappers: Map<KClass<*>, ComponentMapper<*>>
-
+    internal val mappers: Map<KClass<*>, ComponentMapper<*>>,
     /**
      * Returns [Bag] of [ComponentMapper]. The id of the mapper is the index of the bag.
      * It is used by the [EntityService] to fasten up the cleanup process of delayed entity removals.
      */
-    private val mappersBag = bag<ComponentMapper<*>>()
-
-    init {
-        // Create component mappers with help of constructor functions from component factory
-        mappers = componentFactory.mapValues {
-            val compMapper = ComponentMapper(id = mappersBag.size, factory = it.value)
-            mappersBag.add(compMapper)
-            compMapper
-        }
-    }
-
+    private val mappersBag: Bag<ComponentMapper<*>>
+) {
     /**
      * Returns a [ComponentMapper] for the specific type.
      *
@@ -168,13 +157,13 @@ class ComponentService(
      */
     @Suppress("UNCHECKED_CAST")
     inline fun <reified T : Any> mapper(): ComponentMapper<T> {
-        val mapper = mappers[T::class] ?: throw FleksNoSuchComponentException("")
+        val mapper = mappers[T::class] ?: throw FleksNoSuchComponentException(T::class)
         return mapper as ComponentMapper<T>
     }
 
     @Suppress("UNCHECKED_CAST")
     internal fun <T : Any> mapper(type: KClass<T>): ComponentMapper<T> {
-        val mapper = mappers[type] ?: throw FleksNoSuchComponentException("")
+        val mapper = mappers[type] ?: throw FleksNoSuchComponentException(type)
         return mapper as ComponentMapper<T>
     }
 

@@ -16,8 +16,8 @@ class FleksSystemCreationException(system: IteratingSystem) :
 class FleksNoSuchSystemException(system: KClass<*>) :
     FleksException("There is no system of type '${system.simpleName}' in the world.")
 
-class FleksNoSuchComponentException(component: String) :
-    FleksException("There is no component of type '$component' in the ComponentMapper. Did you add the component to the '${WorldConfiguration::class.simpleName}'?")
+class FleksNoSuchComponentException(comp: KClass<*>) :
+    FleksException("There is no component of type '$comp' in the ComponentMapper. Did you add the component to the '${WorldConfiguration::class.simpleName}'?")
 
 class FleksInjectableAlreadyAddedException(type: String) :
     FleksException(

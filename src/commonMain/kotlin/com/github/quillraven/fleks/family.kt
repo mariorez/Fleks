@@ -3,6 +3,37 @@ package com.github.quillraven.fleks
 import com.github.quillraven.fleks.collection.BitArray
 import com.github.quillraven.fleks.collection.EntityComparator
 import com.github.quillraven.fleks.collection.IntBag
+import kotlin.reflect.KClass
+
+@DslMarker
+annotation class FamilyCfgMarker
+
+@FamilyCfgMarker
+data class FamilyConfiguration(
+    val allOf: MutableList<KClass<*>> = mutableListOf(),
+    val noneOf: MutableList<KClass<*>> = mutableListOf(),
+    val anyOf: MutableList<KClass<*>> = mutableListOf(),
+) {
+    fun allOf(vararg components: KClass<*>) {
+        allOf.addAll(components)
+    }
+
+    fun noneOf(vararg components: KClass<*>) {
+        noneOf.addAll(components)
+    }
+
+    fun anyOf(vararg components: KClass<*>) {
+        anyOf.addAll(components)
+    }
+
+    fun isNotValid(): Boolean {
+        return allOf.isEmpty() && noneOf.isEmpty() && anyOf.isEmpty()
+    }
+}
+
+fun family(cfg: FamilyConfiguration.() -> Unit): FamilyConfiguration {
+    return FamilyConfiguration().apply(cfg)
+}
 
 /**
  * A family of [entities][Entity]. It stores [entities][Entity] that have a specific configuration of components.

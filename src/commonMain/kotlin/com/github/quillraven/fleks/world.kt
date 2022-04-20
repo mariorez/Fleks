@@ -1,5 +1,6 @@
 package com.github.quillraven.fleks
 
+import com.github.quillraven.fleks.collection.bag
 import kotlin.reflect.KClass
 
 /**
@@ -14,10 +15,10 @@ annotation class ComponentCfgMarker
 @ComponentCfgMarker
 class ComponentConfiguration {
     @PublishedApi
-    internal val compListenerFactory = mutableMapOf<KClass<*>, () -> ComponentListener<*>>()
+    internal val mappers = mutableMapOf<KClass<*>, ComponentMapper<*>>()
 
     @PublishedApi
-    internal val componentFactory = mutableMapOf<KClass<*>, () -> Any>()
+    internal val mappersBag = bag<ComponentMapper<*>>()
 
     /**
      * Adds the specified component and its [ComponentListener] to the [world][World]. The [ComponentListener] can be omitted.
@@ -28,18 +29,41 @@ class ComponentConfiguration {
      */
     inline fun <reified T : Any> add(
         noinline compFactory: () -> T,
-        noinline listenerFactory: (() -> ComponentListener<T>)? = null
+        listener: ComponentListener<T>? = null
     ) {
         val compType = T::class
 
-        if (compType in componentFactory) {
+        if (compType in mappers) {
             throw FleksComponentAlreadyAddedException(compType)
         }
-        componentFactory[compType] = compFactory
-        if (listenerFactory != null) {
-            // No need to check compType again in compListenerFactory - it is already guarded with the check of componentFactory
-            compListenerFactory[compType] = listenerFactory
+        val compMapper = ComponentMapper(id = mappers.size, factory = compFactory)
+        mappers[compType] = compMapper
+        mappersBag.add(compMapper)
+
+        if (listener != null) {
+            compMapper.addComponentListenerInternal(listener)
         }
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    inline fun <reified T : Any> mapper(): ComponentMapper<T> {
+        val mapper = mappers[T::class] ?: throw FleksNoSuchComponentException(T::class)
+        return mapper as ComponentMapper<T>
+    }
+}
+
+@DslMarker
+annotation class SystemCfgMaker
+
+@SystemCfgMaker
+class SystemConfiguration {
+    internal val systems = mutableListOf<IntervalSystem>()
+
+    fun add(system: IntervalSystem) {
+        if (system in systems) {
+            throw FleksSystemAlreadyAddedException(system::class)
+        }
+        systems.add(system)
     }
 }
 
@@ -63,57 +87,16 @@ class WorldConfiguration {
     @PublishedApi
     internal val injectables = mutableMapOf<String, Injectable>()
 
+    @PublishedApi
     internal val compCfg = ComponentConfiguration()
+
+    internal val systemCfg = SystemConfiguration()
 
     fun components(cfg: ComponentConfiguration.() -> Unit) = compCfg.run(cfg)
 
-    /**
-     * Adds the specified [IntervalSystem] to the [world][World].
-     * The order in which systems are added is the order in which they will be executed when calling [World.update].
-     *
-     * @param factory A function which creates an object of type [T].
-     * @throws [FleksSystemAlreadyAddedException] if the system was already added before.
-     */
-    inline fun <reified T : IntervalSystem> system(noinline factory: () -> T) {
-        val systemType = T::class
-        if (systemType in systemFactory) {
-            throw FleksSystemAlreadyAddedException(systemType)
-        }
-        systemFactory[systemType] = factory
-    }
+    fun systems(cfg: SystemConfiguration.() -> Unit) = systemCfg.run(cfg)
 
-    /**
-     * Adds the specified [dependency] under the given [type] which can then be injected to any [IntervalSystem] or [ComponentListener].
-     *
-     * @param type is the name of the dependency which is used to access it in systems and listeners. This is especially useful if two or more
-     *             dependency objects of the same type shall be injected.
-     * @param dependency object which shall be injected to systems and listeners of the Fleks ECS.
-     * @param used this will set the injected dependency to [used] internally. Default is false. If set to true then Fleks will not
-     *             complain if the dependency is not used by any system or listener on their creation time.
-     * @throws [FleksInjectableAlreadyAddedException] if the dependency was already added before.
-     */
-    fun <T : Any> inject(type: String, dependency: T, used: Boolean = false) {
-        if (type in injectables) {
-            throw FleksInjectableAlreadyAddedException(type)
-        }
-
-        injectables[type] = Injectable(dependency, used)
-    }
-
-    /**
-     * Adds the specified dependency which can then be injected to any [IntervalSystem] or [ComponentListener].
-     * Refer to [inject]: the type is the simpleName of the class of the [dependency].
-     *
-     * @param dependency object which shall be injected to systems and listeners of the Fleks ECS.
-     * @param used this will set the injected dependency to [used] internally. Default is false. If set to true then Fleks will not
-     *             complain if the dependency is not used by any system or listener on their creation time.
-     * @throws [FleksInjectableAlreadyAddedException] if the dependency was already added before.
-     * @throws [FleksInjectableTypeHasNoName] if the dependency type has no T::class.simpleName.
-     */
-    inline fun <reified T : Any> inject(dependency: T, used: Boolean = false) {
-        val type = T::class.simpleName ?: throw FleksInjectableTypeHasNoName(T::class)
-        inject(type, dependency, used)
-    }
+    inline fun <reified T : Any> mapper(): ComponentMapper<T> = compCfg.mapper()
 }
 
 /**
@@ -155,29 +138,9 @@ class World(
 
     init {
         val worldCfg = WorldConfiguration().apply(cfg)
-        componentService = ComponentService(worldCfg.compCfg.componentFactory)
+        componentService = ComponentService(worldCfg.compCfg.mappers, worldCfg.compCfg.mappersBag)
         entityService = EntityService(worldCfg.entityCapacity, componentService)
-        val injectables = worldCfg.injectables
-
-        // Add world to inject object so that component listeners can get it form injectables, too
-        // Set "used" to true to make this injectable not mandatory
-        injectables["World"] = Injectable(this, true)
-
-        systemService = SystemService(this, worldCfg.systemFactory, injectables)
-
-        // create and register ComponentListener
-        worldCfg.compCfg.compListenerFactory.forEach {
-            val compType = it.key
-            val listener = it.value.invoke()
-            val mapper = componentService.mapper(compType)
-            mapper.addComponentListenerInternal(listener)
-        }
-
-        // verify that there are no unused injectables
-        val unusedInjectables = injectables.filterValues { !it.used }.map { it.value.injObj::class }
-        if (unusedInjectables.isNotEmpty()) {
-            throw FleksUnusedInjectablesException(unusedInjectables)
-        }
+        systemService = SystemService(this, worldCfg.systemCfg.systems)
     }
 
     /**

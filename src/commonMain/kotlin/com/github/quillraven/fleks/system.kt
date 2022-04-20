@@ -139,9 +139,8 @@ object Manual : SortingType
  * @param enabled defines if the system gets updated when the [world][World] gets updated. Default is true.
  */
 abstract class IteratingSystem(
-    val allOfComponents: Array<KClass<*>>? = null,
-    val noneOfComponents: Array<KClass<*>>? = null,
-    val anyOfComponents: Array<KClass<*>>? = null,
+    // TODO make a solution to not store the familyCfg as it is not needed after the world configuration setup
+    val familyCfg: FamilyConfiguration? = null,
     private val comparator: EntityComparator = EMPTY_COMPARATOR,
     private val sortingType: SortingType = Automatic,
     interval: Interval = EachFrame,
@@ -249,28 +248,19 @@ abstract class IteratingSystem(
  */
 class SystemService(
     world: World,
-    systemFactory: MutableMap<KClass<*>, () -> IntervalSystem>,
-    injectables: MutableMap<String, Injectable>
+    cfgSystems: List<IntervalSystem>
 ) {
     @PublishedApi
     internal val systems: Array<IntervalSystem>
 
     init {
-        // Configure injector before instantiating systems
         val compService = world.componentService
-        Inject.injectObjects = injectables
-        Inject.mapperObjects = compService.mappers
-        // Create systems
         val entityService = world.entityService
         val allFamilies = mutableListOf<Family>()
-        val systemList = systemFactory.toList()
-        systems = Array(systemFactory.size) { sysIdx ->
-            val newSystem = systemList[sysIdx].second.invoke()
+        systems = Array(cfgSystems.size) { sysIdx ->
+            val newSystem = cfgSystems[sysIdx]
 
-            // Set world reference of newly created system
             newSystem.world = world
-
-            // Set family and entity service reference of newly created iterating system
             if (newSystem is IteratingSystem) {
                 newSystem.family = family(newSystem, entityService, compService, allFamilies)
                 newSystem.entityService = entityService
@@ -296,9 +286,9 @@ class SystemService(
         compService: ComponentService,
         allFamilies: MutableList<Family>
     ): Family {
-        val allOfComps = system.allOfComponents?.map { compService.mapper(it) }
-        val noneOfComps = system.noneOfComponents?.map { compService.mapper(it) }
-        val anyOfComps = system.anyOfComponents?.map { compService.mapper(it) }
+        val allOfComps = system.familyCfg?.allOf?.map { compService.mapper(it) }
+        val noneOfComps = system.familyCfg?.noneOf?.map { compService.mapper(it) }
+        val anyOfComps = system.familyCfg?.anyOf?.map { compService.mapper(it) }
 
         if ((allOfComps == null || allOfComps.isEmpty())
             && (noneOfComps == null || noneOfComps.isEmpty())
@@ -307,9 +297,21 @@ class SystemService(
             throw FleksSystemCreationException(system)
         }
 
-        val allBs = if (allOfComps == null) null else BitArray().apply { allOfComps.forEach { this.set(it.id) } }
-        val noneBs = if (noneOfComps == null) null else BitArray().apply { noneOfComps.forEach { this.set(it.id) } }
-        val anyBs = if (anyOfComps == null) null else BitArray().apply { anyOfComps.forEach { this.set(it.id) } }
+        val allBs = if (allOfComps == null || allOfComps.isEmpty()) null else BitArray().apply {
+            allOfComps.forEach {
+                this.set(it.id)
+            }
+        }
+        val noneBs = if (noneOfComps == null || noneOfComps.isEmpty()) null else BitArray().apply {
+            noneOfComps.forEach {
+                this.set(it.id)
+            }
+        }
+        val anyBs = if (anyOfComps == null || anyOfComps.isEmpty()) null else BitArray().apply {
+            anyOfComps.forEach {
+                this.set(it.id)
+            }
+        }
 
         var family = allFamilies.find { it.allOf == allBs && it.noneOf == noneBs && it.anyOf == anyBs }
         if (family == null) {
@@ -351,46 +353,5 @@ class SystemService(
      */
     fun dispose() {
         systems.forEach { it.onDispose() }
-    }
-}
-
-/**
- * An [injector][Inject] which is used to inject objects from outside the [IntervalSystem].
- *
- * @throws [FleksSystemDependencyInjectException] if the Injector does not contain an entry
- * for the given type in its internal map.
- * @throws [FleksSystemComponentInjectException] if the Injector does not contain a component mapper
- * for the given type in its internal map.
- * @throws [FleksInjectableTypeHasNoName] if the dependency type has no T::class.simpleName.
- */
-@ThreadLocal
-object Inject {
-    @PublishedApi
-    internal lateinit var injectObjects: Map<String, Injectable>
-
-    @PublishedApi
-    internal lateinit var mapperObjects: Map<KClass<*>, ComponentMapper<*>>
-
-    inline fun <reified T : Any> dependency(): T {
-        val injectType = T::class.simpleName ?: throw FleksInjectableTypeHasNoName(T::class)
-        return if (injectType in injectObjects) {
-            injectObjects[injectType]!!.used = true
-            injectObjects[injectType]!!.injObj as T
-        } else throw FleksSystemDependencyInjectException(injectType)
-    }
-
-    inline fun <reified T : Any> dependency(type: String): T {
-        return if (type in injectObjects) {
-            injectObjects[type]!!.used = true
-            injectObjects[type]!!.injObj as T
-        } else throw FleksSystemDependencyInjectException(type)
-    }
-
-    @Suppress("UNCHECKED_CAST")
-    inline fun <reified T : Any> componentMapper(): ComponentMapper<T> {
-        val injectType = T::class
-        return if (injectType in mapperObjects) {
-            mapperObjects[injectType]!! as ComponentMapper<T>
-        } else throw FleksSystemComponentInjectException(injectType.simpleName!!)
     }
 }

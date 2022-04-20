@@ -10,27 +10,27 @@ data class FleksLife(var life: Float = 0f)
 
 data class FleksSprite(var path: String = "", var animationTime: Float = 0f)
 
-class FleksSystemSimple : IteratingSystem(
-    allOfComponents = arrayOf(FleksPosition::class)
+class FleksSystemSimple(
+    private val positions: ComponentMapper<FleksPosition>
+) : IteratingSystem(
+    family { allOf(FleksPosition::class) }
 ) {
-
-    private val positions: ComponentMapper<FleksPosition> = Inject.componentMapper()
-
     override fun onTickEntity(entity: Entity) {
         positions[entity].x++
     }
 }
 
-class FleksSystemComplex1 : IteratingSystem(
-    allOfComponents = arrayOf(FleksPosition::class),
-    noneOfComponents = arrayOf(FleksLife::class),
-    anyOfComponents = arrayOf(FleksSprite::class)
+class FleksSystemComplex1(
+    private val positions: ComponentMapper<FleksPosition>,
+    private val lifes: ComponentMapper<FleksLife>,
+    private val sprites: ComponentMapper<FleksSprite>,
+) : IteratingSystem(
+    family {
+        allOf(FleksPosition::class)
+        noneOf(FleksLife::class)
+        anyOf(FleksSprite::class)
+    }
 ) {
-
-    private val positions: ComponentMapper<FleksPosition> = Inject.componentMapper()
-    private val lifes: ComponentMapper<FleksLife> = Inject.componentMapper()
-    private val sprites: ComponentMapper<FleksSprite> = Inject.componentMapper()
-
     private var actionCalls = 0
 
     override fun onTickEntity(entity: Entity) {
@@ -45,12 +45,12 @@ class FleksSystemComplex1 : IteratingSystem(
     }
 }
 
-class FleksSystemComplex2 : IteratingSystem(
-    anyOfComponents = arrayOf(FleksPosition::class, FleksLife::class, FleksSprite::class)
+class FleksSystemComplex2(
+    private val positions: ComponentMapper<FleksPosition>,
+    private val lifes: ComponentMapper<FleksLife>,
+) : IteratingSystem(
+    family { anyOf(FleksPosition::class, FleksLife::class, FleksSprite::class) }
 ) {
-
-    private val positions: ComponentMapper<FleksPosition> = Inject.componentMapper()
-    private val lifes: ComponentMapper<FleksLife> = Inject.componentMapper()
 
     override fun onTickEntity(entity: Entity) {
         configureEntity(entity) {
@@ -89,7 +89,9 @@ open class FleksStateSimple {
                 add(::FleksPosition)
             }
 
-            system(::FleksSystemSimple)
+            systems {
+                add(FleksSystemSimple(mapper()))
+            }
         }
 
         repeat(NUM_ENTITIES) {
@@ -113,8 +115,10 @@ open class FleksStateComplex {
                 add(::FleksSprite)
             }
 
-            system(::FleksSystemComplex1)
-            system(::FleksSystemComplex2)
+            systems {
+                add(FleksSystemComplex1(mapper(), mapper(), mapper()))
+                add(FleksSystemComplex2(mapper(), mapper()))
+            }
         }
 
         repeat(NUM_ENTITIES) {
