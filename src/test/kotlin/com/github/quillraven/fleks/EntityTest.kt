@@ -14,6 +14,11 @@ private class EntityTestListener : EntityListener {
         entityReceived = entity
         cmpMaskReceived = cmpMask
     }
+
+    override fun onEntityRemoved(entity: Entity) {
+        ++numCalls
+        entityReceived = entity
+    }
 }
 
 private data class EntityTestComponent(var x: Float = 0f)
@@ -154,7 +159,6 @@ internal class EntityTest {
         assertAll(
             { assertEquals(1, listener.numCalls) },
             { assertEquals(expectedEntity, listener.entityReceived) },
-            { assertFalse(listener.cmpMaskReceived[0]) },
             { assertFalse(expectedEntity in mapper) }
         )
     }
@@ -278,5 +282,18 @@ internal class EntityTest {
             { assertEquals(1, entityService.recycledEntities.size) },
             { assertEquals(1, listener.numCalls) }
         )
+    }
+
+    @Test
+    fun `test contains entity`() {
+        val service = EntityService(32, ComponentService())
+        val e1 = service.create { }
+        val e2 = service.create { }
+        service.remove(e2)
+        val e3 = Entity(2)
+
+        assertTrue(e1 in service)
+        assertFalse(e2 in service)
+        assertFalse(e3 in service)
     }
 }

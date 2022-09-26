@@ -78,9 +78,23 @@ data class Family(
 
     /**
      * Returns the number of [entities][Entity] that belong to this family.
+     * This can be an expensive call if the amount of entities is very high because it
+     * iterates through the entire underlying [BitArray].
      */
     val numEntities: Int
-        get() = entities.length()
+        get() = entities.numBits()
+
+    /**
+     * Returns true if and only if this [Family] does not contain any entity.
+     */
+    val isEmpty: Boolean
+        get() = entities.isEmpty
+
+    /**
+     * Returns true if and only if this [Family] contains at least one entity.
+     */
+    val isNotEmpty: Boolean
+        get() = entities.isNotEmpty
 
     /**
      * Flag to indicate if there are changes in the [entities]. If it is true then the [entitiesBag] should get
@@ -141,6 +155,24 @@ data class Family(
     }
 
     /**
+     * Returns the first [Entity] of this [Family].
+     * @throws [NoSuchElementException] if the family has no entities.
+     */
+    fun first(): Entity {
+        updateActiveEntities()
+        return Entity(entitiesBag.first)
+    }
+
+    /**
+     * Returns the first [Entity] of this [Family] or null if the family has no entities.
+     */
+    fun firstOrNull(): Entity? {
+        updateActiveEntities()
+        val id = entitiesBag.firstOrNull ?: return null
+        return Entity(id)
+    }
+
+    /**
      * Updates an [entity] using the given [configuration] to add and remove components.
      */
     inline fun configureEntity(entity: Entity, configuration: EntityUpdateCfg.(Entity) -> Unit) {
@@ -177,6 +209,19 @@ data class Family(
     }
 
     /**
+     * Removes the [entity] of the family and sets the [isDirty] flag if and only
+     * if the [entity] is already in the family.
+     */
+    override fun onEntityRemoved(entity: Entity) {
+        if (entities[entity.id]) {
+            // existing entity gets removed
+            isDirty = true
+            entities.clear(entity.id)
+            listeners.forEach { it.onEntityRemoved(entity) }
+        }
+    }
+
+    /**
      * Adds the given [listener] to the list of [FamilyListener].
      */
     fun addFamilyListener(listener: FamilyListener) = listeners.add(listener)
@@ -187,7 +232,7 @@ data class Family(
     fun removeFamilyListener(listener: FamilyListener) = listeners.removeValue(listener)
 
     /**
-     * Returns true if an only if the given [listener] is part of the list of [FamilyListener].
+     * Returns true if and only if the given [listener] is part of the list of [FamilyListener].
      */
     operator fun contains(listener: FamilyListener) = listener in listeners
 }
